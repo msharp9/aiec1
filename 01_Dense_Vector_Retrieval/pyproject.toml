@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Session 1 dense vector retrieval notebooks for AI Makerspace."
 requires-python = ">=3.12"
 dependencies = [
+    "autorag>=0.2.6",
     "ipykernel>=6.29.0",
     "jupyterlab>=4.2.0",
     "langchain>=1.0.0,<2.0.0",
