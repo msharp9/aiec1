@@ -2,9 +2,9 @@
 name = "aim-dense-vector-retrieval"
 version = "0.1.0"
 description = "Session 1 dense vector retrieval notebooks for AI Makerspace."
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
-    "autorag>=0.2.6",
+    "autorag>=0.3.22",
     "ipykernel>=6.29.0",
     "jupyterlab>=4.2.0",
     "langchain>=1.0.0,<2.0.0",

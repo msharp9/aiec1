@@ -88,17 +88,27 @@ Why is metadata important for a RAG application?
 
 ##### ✅ Answer:
 
+Well typically the metadata is the data most people care about, since the data in the RAG application is just an embedding. But beyond that technicality, we often want to give references or sources back to the user so they can confirm and gain confidence in our answers since LLMs are known to hallucinate.
+
 #### ❓Question #3
 
 What tradeoff do we make when choosing chunk size and chunk overlap?
 
 ##### ✅ Answer:
 
+A chunk size of 1 token has lost all context, but a chunk size of 1_000_000+ will contain so much context it has ceased to be useful. Somewhere in between is an optimal chunk size, and it's different for each dataset, but it typically is between 400-800 tokens or about the size of 1 to 2 paragraphs. Essentially, we are looking for each chunk to contain an idea.
+
+For chunk overlap, the larger a chunk size the more duplication we will have in our database so we want them as small as possible to stay efficient. The smaller a chunk size, the more we rely on getting lucky that we have optimal splits. We are trying to prevent cutting off sentences in the middle, or paragraphs in the middle, etc. Situations where a single idea could be split into two seperate chunks and prevent either of them from surfacing during search.
+
+Use the [Chunk Visualizer](https://chunkviz.up.railway.app/) to experiment with different chunk sizes and overlaps and see how the text boundaries change.
+
 #### ❓Question #4
 
 What does a similarity score help you understand, and what does it not prove by itself?
 
 ##### ✅ Answer:
+
+That the query and the response are either close or far apart in the latent space. Typically it means they are going to have similar word choices, in similar orders. It doesn't really prove anything, so there's many things I could answer here, but this seems like a leading question in which case I'll answer it doesn't prove that the result from the query contains the answer to the user's question.
 
 ---
 
@@ -115,6 +125,8 @@ For the vibe check queries, did the retrieved context seem relevant before gener
 
 ##### ✅ Answer:
 
+We didn't print the retrieved context, but based on the references cited, and content it seems like we have copied some of the phrases from the pdf word for word and they are relevant. So yes. The last vibe check question is the most interesting, it recieved 4 chunks but still answered correctly.
+
 ---
 
 ## 🏗️ Activity #4: Tune Retrieval
@@ -130,13 +142,41 @@ Document what changed and whether retrieval improved.
 
 ##### Settings Changed:
 
--
+- chunk_size, chunk_overlap, and `top_k`, swept jointly using AutoRAG.
+- Sweep grid: chunk_size ∈ {500, 1000, 1500} × chunk_overlap ∈ {100, 200, 300} (paired, 1:5 ratio) × top_k ∈ {2, 4, 6}, evaluated against a 5-question gold QA set with one ground-truth chunk per question (anchored on a distinctive phrase).
+
+**Leaderboard (sorted by retrieval_ndcg):**
+
+| chunk_size | overlap | top_k | recall | precision | F1   | NDCG | MRR  |
+|-----------:|--------:|------:|-------:|----------:|-----:|-----:|-----:|
+| **500**    | **100** | **2** | 1.00   | 0.50      | 0.67 | 1.00 | 1.00 |
+| 500        | 100     | 4     | 1.00   | 0.25      | 0.40 | 1.00 | 1.00 |
+| 500        | 100     | 6     | 1.00   | 0.17      | 0.29 | 1.00 | 1.00 |
+| 1000       | 200     | 4     | 1.00   | 0.25      | 0.40 | 0.89 | 0.85 |
+| 1000       | 200     | 6     | 1.00   | 0.17      | 0.29 | 0.89 | 0.85 |
+| 1000       | 200     | 2     | 0.80   | 0.40      | 0.53 | 0.80 | 0.80 |
+| 1500       | 300     | 2     | 0.80   | 0.40      | 0.53 | 0.80 | 0.80 |
+| 1500       | 300     | 4     | 0.80   | 0.20      | 0.32 | 0.80 | 0.80 |
+| 1500       | 300     | 6     | 0.80   | 0.13      | 0.23 | 0.80 | 0.80 |
+
+**Headline:** all three `chunk_size=500, overlap=100` runs score **NDCG 1.00 + MRR 1.00** — the gold chunk is always ranked #1. The 500/100/`top_k=2` row wins on F1 because precision is highest there.
+
+**Before:** notebook default of `chunk_size=1000, chunk_overlap=200, k=4` → recall 1.00, NDCG 0.89, MRR 0.85.
+
+**After:** `chunk_size=500, chunk_overlap=100, top_k=2` → recall 1.00, NDCG 1.00 (+12%), MRR 1.00 (+18%), F1 0.67 (+67% vs the default's 0.40). Smaller chunks make the answer-bearing chunk topically pure, so it ranks #1 reliably; smaller `top_k` then captures the precision win without losing recall.
 
 ##### Results:
 
-1.
-2.
-3.
+Yes, retrieval improved decisively. Three observations from the table:
+
+1. **`top_k` doesn't change retrieval ranking quality, only precision.** Recall, NDCG, and MRR are flat across `top_k` for any fixed (chunk_size, overlap). That makes sense — the retriever returns the same top-K *ordering*; cranking K just dilutes precision by adding lower-ranked passages.
+2. **Smaller chunks dominate.** 500-char chunks land the gold chunk at rank 1 every time (NDCG=MRR=1.0). 1000-char chunks miss rank 1 on at least one question, so MRR drops to ~0.85. 1500-char chunks dilute the embedding enough that one question's gold chunk never appears at all (recall=0.80 across all top_k).
+3. **Overlap didn't earn its keep here.** A larger overlap was supposed to protect against unlucky boundary splits, but at 1500/300 we still lost a question's gold chunk. The hypothesis is that on this PDF the relevant phrase-cluster fits inside a 500-char window, so giving the embedder more text only adds neighboring topics that pull the cosine direction off-target.
+
+**Caveats:**
+- 5 QA pairs is a small N — recall jumps in 0.20 increments, so anything that swings one question swings the whole metric. A more rigorous sweep would use ≥30 questions or AutoRAG's own QA-generation (`autorag.data.qa.*`) to scale the gold set.
+- The `retrieval_gt` is one-chunk-per-question, anchored on a specific phrase. Questions whose answer genuinely spans multiple chunks aren't measured here.
+- We swept chunk_size and overlap together (1:5 ratio). Decoupling them — e.g., 500/0 vs 500/100 vs 500/200 — would tell us which one is doing the work.
 
 ---
 
