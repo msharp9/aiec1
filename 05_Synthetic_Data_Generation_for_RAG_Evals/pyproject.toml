@@ -23,6 +23,7 @@ dependencies = [
     "qdrant-client>=1.15.0,<2.0.0",
     "ragas @ git+https://github.com/vibrantlabsai/ragas.git@298b68274234c060deacab3cf5fb52aa3a20e885",
     "rapidfuzz>=3.14.0,<4.0.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [tool.uv]
