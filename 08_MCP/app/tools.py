@@ -119,6 +119,54 @@ async def remove_from_cart(product_id: int) -> dict:
 
 
 @mcp.tool()
+async def instant_order(product_name: str, quantity: int = 1) -> dict:
+    """Buy a product immediately by name — finds it, adds it to cart, and checks out in one step.
+    Use this when the user says something like 'buy salmon treats' or 'order 2 catnip mice'.
+    Matches product name case-insensitively. Returns an error if no match or multiple matches are found."""
+    username = await _get_username()
+    db = await oauth_provider._get_db()
+
+    cursor = await db.execute(
+        "SELECT id, name, price FROM products WHERE LOWER(name) LIKE LOWER(?)",
+        (f"%{product_name}%",),
+    )
+    matches = await cursor.fetchall()
+
+    if not matches:
+        return {"error": f"No products found matching '{product_name}'. Try list_products to browse the catalog."}
+    if len(matches) > 1:
+        return {
+            "error": f"Multiple products match '{product_name}'. Please be more specific.",
+            "matches": [{"id": r[0], "name": r[1], "price": r[2]} for r in matches],
+        }
+
+    product_id, product_name_exact, price = matches[0]
+
+    await db.execute(
+        """INSERT INTO cart_items (username, product_id, quantity)
+           VALUES (?, ?, ?)
+           ON CONFLICT(username, product_id)
+           DO UPDATE SET quantity = quantity + excluded.quantity""",
+        (username, product_id, quantity),
+    )
+    await db.commit()
+
+    order_id = secrets.token_hex(8).upper()
+    total = round(price * quantity, 2)
+
+    await db.execute("DELETE FROM cart_items WHERE username = ?", (username,))
+    await db.commit()
+
+    return {
+        "order_id": order_id,
+        "status": "confirmed",
+        "items": [{"product_id": product_id, "name": product_name_exact, "price": price, "quantity": quantity, "subtotal": total}],
+        "total": total,
+        "message": f"Order {order_id} confirmed! {quantity}x {product_name_exact} on the way — your cats will love it, {username}!",
+    }
+
+
+@mcp.tool()
 async def checkout() -> dict:
     """Complete your purchase. Shows order summary and clears the cart."""
     username = await _get_username()
