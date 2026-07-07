@@ -1,0 +1,28 @@
+[project]
+name = "aim-session-10-eval"
+version = "0.1.0"
+description = "RAGAS eval of the Lesson 10 RAG app: Fireworks vs OpenAI, single OpenAI judge."
+requires-python = ">=3.12"
+dependencies = [
+    "ipykernel>=6.29.0",
+    "jupyterlab>=4.2.0",
+    "instructor==1.15.3",
+    "openai",
+    "pandas",
+    "python-dotenv",
+    "tiktoken",
+    # App source is imported from ../app, so the eval env needs the app's libs too.
+    "langchain-openai",
+    "langchain-community==0.3.31",   # FORCED by RAGAS (vertexai import); everything else latest
+    "langchain-qdrant",
+    "langchain-text-splitters",
+    "langchain-core",
+    "langgraph",
+    "qdrant-client",
+    "pymupdf",
+    "langsmith",
+    "ragas==0.4.3",
+]
+
+[tool.uv]
+package = false
