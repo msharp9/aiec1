@@ -25,5 +25,11 @@ RUN uv pip uninstall --system pip setuptools wheel && rm /usr/bin/uv /usr/bin/uv
 
 WORKDIR /deps/09_Agent_Servers
 
+# -- Vercel warmup proxy: bind $PORT instantly, forward to langgraph on 9000 --
+# (vercel_port_proxy.py / vercel_entrypoint.sh are already added via `ADD . /deps/...` above)
+RUN chmod +x /deps/09_Agent_Servers/vercel_entrypoint.sh
+ENTRYPOINT ["/deps/09_Agent_Servers/vercel_entrypoint.sh"]
+# -- End of Vercel warmup proxy --
+
 ENV PORT=8000
 EXPOSE 8000
