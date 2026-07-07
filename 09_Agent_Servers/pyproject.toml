@@ -21,3 +21,10 @@ dependencies = [
     "arxiv>=2.1.0,<4.0.0",
     "python-dotenv>=1.2.2",
 ]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "app.graphs"]

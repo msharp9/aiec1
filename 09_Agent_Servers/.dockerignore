@@ -1,0 +1,23 @@
+# Frontend — separate Vercel project, not part of the agent image
+frontend/
+
+# Python virtualenv & caches
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# LangGraph local dev state (inmem pickle store)
+.langgraph_api/
+
+# Env files — secrets are injected via Vercel project env vars
+.env
+.env.*
+
+# Vercel / VCS / editor
+.vercel/
+.git/
+.DS_Store
+
+# Docs & lockfile-adjacent noise not needed at runtime
+README.md
