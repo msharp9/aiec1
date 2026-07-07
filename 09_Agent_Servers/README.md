@@ -202,17 +202,38 @@ Studio and the SDK stream the same events. Studio is for debugging; the SDK (and
 ### 4. Smoke-test with the SDK
 
 ```python
-from langgraph_sdk import get_client
+from langgraph_sdk import get_sync_client
 
-client = get_client(url="http://localhost:2024")
+client = get_sync_client(url="http://localhost:2024")
 
 for chunk in client.runs.stream(
     None,
-    "agent",
+    "simple_agent",
     input={"messages": [{"role": "human", "content": "How often should I deworm my cat?"}]},
     stream_mode="updates",
 ):
     print(chunk)
+```
+
+> The second argument is the **graph ID** registered under `"graphs"` in `langgraph.json` — here `"simple_agent"`. Passing `"agent"` (the key under `"assistants"`) raises `UnprocessableEntityError: Invalid assistant: 'agent'. Must be ... one of the registered graphs: simple_agent`. To address it by the `agent` assistant name instead, create the assistant on the running server first (`client.assistants.create(graph_id="simple_agent", name="agent")`), or just use the graph ID as shown.
+
+`get_client` returns an **async** client whose `.runs.stream(...)` is an async generator — iterating it with a plain `for` raises `TypeError: 'async_generator' object is not iterable`. Use `get_sync_client` (shown above) for a synchronous `for` loop, or keep `get_client` and use `async for` inside an `async def`:
+
+```python
+import asyncio
+from langgraph_sdk import get_client
+
+async def main():
+    client = get_client(url="http://localhost:2024")
+    async for chunk in client.runs.stream(
+        None,
+        "simple_agent",
+        input={"messages": [{"role": "human", "content": "How often should I deworm my cat?"}]},
+        stream_mode="updates",
+    ):
+        print(chunk)
+
+asyncio.run(main())
 ```
 
 If this works locally, you are ready to deploy.
