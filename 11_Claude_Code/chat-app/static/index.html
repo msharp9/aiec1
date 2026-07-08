@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whiskers 🐾 — Cat Health Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-head">
+        <h1>🐾 Whiskers</h1>
+        <button id="new-chat" title="Start a new conversation">+ New chat</button>
+      </div>
+      <ul id="conversation-list"></ul>
+      <p class="sidebar-foot">Whiskerful Wonders Cat Café</p>
+    </aside>
+
+    <main id="chat">
+      <header id="chat-head">
+        <h2 id="chat-title">Whiskers, the Cat Health Assistant</h2>
+        <p class="subtitle">Friendly cat-care guidance — not a substitute for your vet.</p>
+      </header>
+
+      <div id="messages"></div>
+
+      <form id="composer">
+        <input id="input" type="text" autocomplete="off"
+               placeholder="Ask about your cat… e.g. can cats eat cheese?" />
+        <button id="send" type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
