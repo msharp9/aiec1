@@ -1,6 +1,8 @@
 # Training artifacts
 outputs/
 grpo_saved_lora/
+grpo_trainer_lora_model/
+unsloth_compiled_cache/
 wandb/
 
 # Environment
